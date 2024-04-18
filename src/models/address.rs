@@ -1,10 +1,58 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use sqlx::{QueryBuilder, Sqlite};
 
-use crate::{capture_address::RankData, db::DbPool};
+use crate::db::DbPool;
+
+// capture struct
+#[derive(Debug, Deserialize)]
+pub struct CaptureRankData {
+    pub wallet_address: String,
+    pub address: String,
+    pub realized_profit: Option<f64>,
+    pub buy: u32,
+    pub sell: u32,
+    pub last_active: i64,
+    pub realized_profit_7d: Option<f64>,
+    pub pnl_30d: Option<f64>,
+    pub pnl_7d: Option<f64>,
+    pub pnl_1d: Option<f64>,
+    pub txs_30d: u32,
+    pub eth_balance: Option<f64>,
+    pub sol_balance: Option<f64>,
+    pub twitter_username: Option<String>,
+    pub avatar: Option<String>,
+    pub ens: Option<String>,
+    pub tag: String,
+    pub tag_rank: CaptureTagRank,
+    pub nickname: Option<String>,
+    pub tags: Vec<String>,
+    pub twitter_name: Option<String>,
+    pub followers_count: u32,
+    pub is_blue_verified: bool,
+    pub twitter_description: Option<String>,
+    pub name: Option<String>,
+    pub avg_hold_time: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CaptureTagRank {
+    pub smart_degen: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CaptureData {
+    pub rank: Vec<CaptureRankData>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CaptureResponseData {
+    pub code: u32,
+    pub msg: String,
+    pub data: CaptureData,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, sqlx::Type)]
-
 pub struct Address {
     pub id: i64,
     pub address: String,
@@ -32,8 +80,8 @@ pub struct AddAddressParams {
     pub realized_profit_7d: f64,
     pub last_active: i64,
 }
-impl From<RankData> for AddAddressParams {
-    fn from(v: RankData) -> Self {
+impl From<CaptureRankData> for AddAddressParams {
+    fn from(v: CaptureRankData) -> Self {
         Self {
             address: v.address,
             source: "".to_string(),
@@ -89,4 +137,22 @@ pub async fn get(pool: &DbPool, id: i64) -> Result<Address> {
         .fetch_one(&pool.0)
         .await?;
     Ok(book)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListParams {
+    pub limit: Option<(i64, i64)>,
+    pub kw: Option<String>,
+}
+/// list address
+pub async fn list_all(pool: &DbPool) -> Result<Vec<Address>> {
+    let mut query: QueryBuilder<Sqlite> =
+        QueryBuilder::new("select * from addresses where deleted = 0");
+
+    // query.push(" order by created DESC");
+    // if let Some(limit) = filter.limit {
+    //     query.push(format!(" limit {},{}", limit.0, limit.1));
+    // }
+    let items = query.build_query_as().fetch_all(&pool.0).await?;
+    Ok(items)
 }

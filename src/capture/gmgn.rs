@@ -1,6 +1,8 @@
-use std::{fs::File, io::Write};
+use std::{error::Error, fs::File, io::Write};
 
-use crate::capture_address::{self, Capture, ResponseData};
+use crate::capture::CAPTURE_ADDRESS_FILE;
+
+use super::Capture;
 
 pub struct GmgnCapture {
     url: String,
@@ -15,18 +17,15 @@ impl GmgnCapture {
 }
 
 impl Capture for GmgnCapture {
-    fn get(&self) -> Result<ResponseData, reqwest::Error> {
-        reqwest::blocking::get(self.url.clone())?.json()
+    fn get(&self) -> Result<String, Box<dyn Error>> {
+        Ok(reqwest::blocking::get(self.url.clone())?.text()?)
     }
 
-    fn save(&self) -> Result<(), reqwest::Error> {
+    fn save(&self) -> Result<(), Box<dyn Error>> {
         let text = reqwest::blocking::get(self.url.clone())?.text()?;
-        let mut file = File::create(capture_address::CAPTURE_FILE).unwrap();
+        let mut file = File::create(CAPTURE_ADDRESS_FILE).unwrap();
         file.write_all(text.as_bytes()).unwrap();
-        println!(
-            "Capture address json saved to {:?}",
-            capture_address::CAPTURE_FILE
-        );
+        println!("Capture address json saved to {:?}", CAPTURE_ADDRESS_FILE);
         Ok(())
     }
 }

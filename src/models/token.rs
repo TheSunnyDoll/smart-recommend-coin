@@ -3,6 +3,35 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::DbPool;
 
+// capture struct
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaptureToken {
+    pub token_address: Option<String>,
+    pub amount: i64,
+    pub decimals: u32,
+    pub owner: String,
+    pub token_icon: Option<String>,
+    pub token_name: Option<String>,
+    pub token_symbol: Option<String>,
+    pub price_usdt: Option<f64>,
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CaptureData {
+    pub data_type: String,
+    pub count: u32,
+    pub tokens: Vec<CaptureToken>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CaptureResponseData {
+    pub success: bool,
+    pub data: CaptureData,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, sqlx::Type)]
 pub struct Token {
     pub id: i64,
@@ -27,6 +56,20 @@ pub struct AddTokenParams {
     pub token_icon: String,
     pub amount: String,
     pub price_usdt: f64,
+}
+
+impl From<CaptureToken> for AddTokenParams {
+    fn from(v: CaptureToken) -> Self {
+        Self {
+            owner: v.owner,
+            token_address: v.token_address.unwrap_or_default(),
+            token_name: v.token_name.unwrap_or_default(),
+            token_symbol: v.token_symbol.unwrap_or_default(),
+            token_icon: v.token_icon.unwrap_or_default(),
+            amount: v.amount.to_string(),
+            price_usdt: v.price_usdt.unwrap_or_default(),
+        }
+    }
 }
 
 /// add token

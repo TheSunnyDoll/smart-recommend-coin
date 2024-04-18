@@ -1,10 +1,10 @@
-use chrono::Local;
-use chrono::TimeZone;
 use clap::{Parser, Subcommand};
-use smart_recommend_coin::capture_address;
+use smart_recommend_coin::capture::gmgn;
+use smart_recommend_coin::capture::solscan;
 use smart_recommend_coin::db;
-use smart_recommend_coin::gmgn;
 use smart_recommend_coin::models;
+use smart_recommend_coin::services::address_service;
+use smart_recommend_coin::services::token_service;
 use tokio::task;
 
 #[derive(Parser)]
@@ -23,6 +23,11 @@ enum Commands {
         #[arg(short, long, default_value_t = 30)]
         days: i8,
     },
+    /// capture the token
+    CaptureToken {
+        #[arg(short, long, default_value_t = String::from("sol"))]
+        chain: String,
+    },
 }
 
 #[tokio::main]
@@ -36,27 +41,17 @@ async fn main() -> anyhow::Result<()> {
             println!("chain: {}, days: {}", chain, days);
             let capture = gmgn::GmgnCapture::new(chain.to_string(), *days);
             task::spawn_blocking(|| {
-                capture_address::perform_capture(capture).unwrap();
+                address_service::capture_save(capture).unwrap();
             })
             .await
             .expect("Failed to join blocking task");
-            let response = capture_address::read();
+            let response = address_service::read_capture_data();
             match response {
                 Ok(data) => {
                     for (_i, item) in data.data.rank.into_iter().enumerate() {
-                        // println!(
-                        //     "{} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
-                        //     i,
-                        //     item.address,
-                        //     item.sol_balance.unwrap(),
-                        //     item.pnl_1d.unwrap_or_default(),
-                        //     item.pnl_7d.unwrap_or_default(),
-                        //     item.pnl_30d.unwrap_or_default(),
-                        //     item.realized_profit.unwrap(),
-                        //     item.txs_30d,
-                        //     item.avg_hold_time.unwrap_or_default() / 3600.0,
-                        //     Local.timestamp_opt(item.last_active, 0).unwrap()
-                        // );
+                        if item.pnl_30d.unwrap_or_default() < 0.5 {
+                            continue;
+                        }
                         let address = item.address.clone();
                         let mut params: models::address::AddAddressParams = item.into();
                         params.source = "gmgn".to_string();
@@ -72,6 +67,40 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(e) => {
                     println!("{:?}", e)
+                }
+            }
+        }
+        Some(Commands::CaptureToken { chain }) => {
+            println!("chain: {}", chain);
+            let addresses = models::address::list_all(&pool).await?;
+
+            for (_i, item) in addresses.into_iter().enumerate() {
+                println!("Captureing address token: {}", item.address);
+                let capture = solscan::SolscanCapture::new(item.address);
+                let capture_data =
+                    task::spawn_blocking(|| token_service::capture_get(capture).unwrap())
+                        .await
+                        .unwrap();
+                for token in capture_data.data.tokens {
+                    if token.token_address.is_none() {
+                        continue;
+                    }
+                    let token_name = token.token_name.clone();
+                    let token_symbol = token.token_symbol.clone();
+                    let token_address = token.token_address.clone();
+                    let params: models::token::AddTokenParams = token.into();
+                    match models::token::add(&pool, params).await {
+                        Ok(v) => {
+                            println!("Added token: {}", v.token_name);
+                        }
+                        Err(e) => {
+                            println!(
+                                "Failed add token: {:?}, {}",
+                                (token_symbol, token_name, token_address),
+                                e
+                            );
+                        }
+                    };
                 }
             }
         }

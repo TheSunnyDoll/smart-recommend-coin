@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-pub mod capture_address;
+pub mod capture;
 pub mod db;
-pub mod gmgn;
 pub mod models;
+pub mod services;
 
 const DATA_DIR: &str = "data";
 pub fn get_data_dir() -> PathBuf {
