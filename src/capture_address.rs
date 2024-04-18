@@ -3,7 +3,7 @@ use std::{error::Error, fs::File, io::BufReader, path::Path};
 use reqwest;
 use serde::Deserialize;
 
-pub const CAPTURE_FILE: &str = "capture_address.json";
+pub const CAPTURE_FILE: &str = "data/capture_address.json";
 
 pub trait Capture {
     fn get(&self) -> Result<ResponseData, reqwest::Error>;
