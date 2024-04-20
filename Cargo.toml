@@ -17,3 +17,4 @@ anyhow = "1.0.82"
 tracing = "0.1.40"
 axum = "0.7.5"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tower-http = { version = "0.5.2", features = ["cors"] }

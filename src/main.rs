@@ -1,3 +1,5 @@
+use axum::http::HeaderValue;
+use axum::http::Method;
 use axum::routing::get;
 use axum::Router;
 use clap::{Parser, Subcommand};
@@ -8,6 +10,7 @@ use smart_recommend_coin::models;
 use smart_recommend_coin::services::address_service;
 use smart_recommend_coin::services::token_service;
 use tokio::task;
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -129,6 +132,17 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::ApiServer {}) => {
             let app = Router::new()
                 .route("/tokens/recommend", get(token_service::tokens))
+                .layer(
+                    CorsLayer::new()
+                        .allow_origin("*".parse::<HeaderValue>().unwrap())
+                        .allow_methods([
+                            Method::GET,
+                            Method::POST,
+                            Method::PUT,
+                            Method::OPTIONS,
+                            Method::DELETE,
+                        ]),
+                )
                 .with_state(pool.clone());
 
             let listener = tokio::net::TcpListener::bind("127.0.0.1:7000")
