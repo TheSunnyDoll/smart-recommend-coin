@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::{QueryBuilder, Sqlite};
 
@@ -96,10 +96,10 @@ impl From<CaptureRankData> for AddAddressParams {
 }
 
 /// add address
-pub async fn add(pool: &DbPool, address: AddAddressParams) -> Result<Address> {
+pub async fn add(pool: &DbPool, address: AddAddressParams) -> Result<Option<Address>> {
     // check if exists
     if exists(pool, &address.address).await? {
-        return Err(anyhow!("address already exists"));
+        return Ok(None);
     }
     let timestamp = chrono::Local::now().timestamp();
     let last_id = sqlx::query("INSERT INTO addresses (address, source, pnl_1d, pnl_7d, pnl_30d, realized_profit, realized_profit_7d, last_active, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
@@ -116,7 +116,7 @@ pub async fn add(pool: &DbPool, address: AddAddressParams) -> Result<Address> {
         .execute(&pool.0)
         .await?
         .last_insert_rowid();
-    get(pool, last_id).await
+    Ok(Some(get(pool, last_id).await?))
 }
 /// exists address
 pub async fn exists(pool: &DbPool, address: &str) -> Result<bool> {

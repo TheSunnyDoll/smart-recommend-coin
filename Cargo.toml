@@ -15,3 +15,5 @@ chrono = "0.4.38"
 sqlx = { version = "0.7", features = ["runtime-tokio", "tls-rustls", "sqlite"] }
 anyhow = "1.0.82"
 tracing = "0.1.40"
+axum = "0.7.5"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

@@ -3,7 +3,7 @@ use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tracing::debug;
 
 use crate::get_data_dir;
-
+#[derive(Clone)]
 pub struct DbPool(pub SqlitePool);
 
 pub async fn init() -> Result<()> {

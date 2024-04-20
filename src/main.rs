@@ -1,3 +1,5 @@
+use axum::routing::get;
+use axum::Router;
 use clap::{Parser, Subcommand};
 use smart_recommend_coin::capture::gmgn;
 use smart_recommend_coin::capture::solscan;
@@ -6,6 +8,8 @@ use smart_recommend_coin::models;
 use smart_recommend_coin::services::address_service;
 use smart_recommend_coin::services::token_service;
 use tokio::task;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -28,10 +32,19 @@ enum Commands {
         #[arg(short, long, default_value_t = String::from("sol"))]
         chain: String,
     },
+    StatToken {},
+    ApiServer {},
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     let cli = Cli::parse();
     db::init().await.unwrap();
     let pool = db::get_pool().await.unwrap();
@@ -57,7 +70,9 @@ async fn main() -> anyhow::Result<()> {
                         params.source = "gmgn".to_string();
                         match models::address::add(&pool, params).await {
                             Ok(v) => {
-                                println!("Added address: {}", v.address);
+                                if let Some(vv) = v {
+                                    println!("Added address: {}", vv.address);
+                                }
                             }
                             Err(e) => {
                                 println!("Failed add address: {}, {}", address, e);
@@ -88,10 +103,12 @@ async fn main() -> anyhow::Result<()> {
                     let token_name = token.token_name.clone();
                     let token_symbol = token.token_symbol.clone();
                     let token_address = token.token_address.clone();
-                    let params: models::token::AddTokenParams = token.into();
-                    match models::token::add(&pool, params).await {
+                    let params: models::address_token::AddTokenParams = token.into();
+                    match models::address_token::add(&pool, params).await {
                         Ok(v) => {
-                            println!("Added token: {}", v.token_name);
+                            if let Some(vv) = v {
+                                println!("Added token: {}", vv.token_name);
+                            }
                         }
                         Err(e) => {
                             println!(
@@ -103,6 +120,22 @@ async fn main() -> anyhow::Result<()> {
                     };
                 }
             }
+        }
+        Some(Commands::StatToken {}) => {
+            token_service::stat_token_holder(pool.clone())
+                .await
+                .unwrap();
+        }
+        Some(Commands::ApiServer {}) => {
+            let app = Router::new()
+                .route("/tokens/recommend", get(token_service::tokens))
+                .with_state(pool.clone());
+
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:7000")
+                .await
+                .unwrap();
+            tracing::info!("listening on {}", listener.local_addr().unwrap());
+            axum::serve(listener, app).await.unwrap();
         }
         None => {}
     }

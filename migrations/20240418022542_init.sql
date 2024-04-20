@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS addresses
     deleted INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS tokens
+CREATE TABLE IF NOT EXISTS address_tokens
 (
     id INTEGER PRIMARY KEY NOT NULL,
     owner TEXT NOT NULL,
@@ -25,6 +25,19 @@ CREATE TABLE IF NOT EXISTS tokens
     token_icon TEXT NOT NULL DEFAULT '',
     amount TEXT NOT NULL,
     price_usdt REAL NOT NULL DEFAULT 0.00,
+    created INTEGER NOT NULL DEFAULT 0,
+    updated INTEGER NOT NULL DEFAULT 0,
+    deleted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS tokens
+(
+    id INTEGER PRIMARY KEY NOT NULL,
+    token_address TEXT NOT NULL,
+    token_name TEXT NOT NULL,
+    token_symbol TEXT NOT NULL,
+    token_icon TEXT NOT NULL DEFAULT '',
+    holders INTEGER NOT NULL DEFAULT 0,
     created INTEGER NOT NULL DEFAULT 0,
     updated INTEGER NOT NULL DEFAULT 0,
     deleted INTEGER NOT NULL DEFAULT 0
