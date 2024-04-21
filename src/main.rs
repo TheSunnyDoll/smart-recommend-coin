@@ -131,7 +131,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Some(Commands::ApiServer {}) => {
             let app = Router::new()
-                .route("/tokens/recommend", get(token_service::tokens))
+                .route("/api/tokens/recommend", get(token_service::tokens))
                 .layer(
                     CorsLayer::new()
                         .allow_origin("*".parse::<HeaderValue>().unwrap())

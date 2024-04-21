@@ -47,6 +47,7 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
+import { fetchWithBaseUrl } from "../api.js";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue";
 
 const token_recommend = ref([]);
@@ -56,7 +57,8 @@ const categories = ref({
 });
 onMounted(async () => {
     try {
-        const response = await fetch("http://127.0.0.1:7000/tokens/recommend");
+        // const response = await fetch("/api/tokens/recommend");
+        const response = await fetchWithBaseUrl("/api/tokens/recommend");
         if (!response.ok) {
             throw new Error("Failed to fetch token recommend");
         }
