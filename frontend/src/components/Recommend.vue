@@ -45,9 +45,9 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { fetchWithBaseUrl } from "../api.js";
+import { fetchWithBaseUrl } from "../api.ts";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue";
 
 const token_recommend = ref([]);
