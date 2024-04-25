@@ -99,28 +99,30 @@ async fn main() -> anyhow::Result<()> {
                     task::spawn_blocking(|| token_service::capture_get(capture).unwrap())
                         .await
                         .unwrap();
-                for token in capture_data.data.tokens {
-                    if token.token_address.is_none() {
-                        continue;
-                    }
-                    let token_name = token.token_name.clone();
-                    let token_symbol = token.token_symbol.clone();
-                    let token_address = token.token_address.clone();
-                    let params: models::address_token::AddTokenParams = token.into();
-                    match models::address_token::add(&pool, params).await {
-                        Ok(v) => {
-                            if let Some(vv) = v {
-                                println!("Added token: {}", vv.token_name);
+                if let Some(data) = capture_data.data {
+                    for token in data.tokens {
+                        if token.token_address.is_none() {
+                            continue;
+                        }
+                        let token_name = token.token_name.clone();
+                        let token_symbol = token.token_symbol.clone();
+                        let token_address = token.token_address.clone();
+                        let params: models::address_token::AddTokenParams = token.into();
+                        match models::address_token::add(&pool, params).await {
+                            Ok(v) => {
+                                if let Some(vv) = v {
+                                    println!("Added token: {}", vv.token_name);
+                                }
                             }
-                        }
-                        Err(e) => {
-                            println!(
-                                "Failed add token: {:?}, {}",
-                                (token_symbol, token_name, token_address),
-                                e
-                            );
-                        }
-                    };
+                            Err(e) => {
+                                println!(
+                                    "Failed add token: {:?}, {}",
+                                    (token_symbol, token_name, token_address),
+                                    e
+                                );
+                            }
+                        };
+                    }
                 }
             }
         }
