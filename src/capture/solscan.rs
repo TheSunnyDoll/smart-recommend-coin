@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use reqwest::header::{HeaderMap, HeaderValue};
+use tracing::debug;
 
 use super::Capture;
 
@@ -40,7 +41,13 @@ impl Capture for SolscanCapture {
         headers.insert("user-agent", HeaderValue::from_static("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"));
         let client = reqwest::blocking::Client::new();
         let data = client.get(self.url.clone()).headers(headers).send()?.text();
-        Ok(data?)
+        match data {
+            Ok(text) => {
+                debug!("response text: {}", text);
+                Ok(text)
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 
     fn save(&self) -> Result<(), Box<dyn Error>> {
