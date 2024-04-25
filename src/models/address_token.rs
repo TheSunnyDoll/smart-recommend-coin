@@ -29,7 +29,7 @@ pub struct CaptureData {
 #[derive(Debug, Deserialize)]
 pub struct CaptureResponseData {
     pub success: bool,
-    pub data: Option<CaptureData>,
+    pub data: CaptureData,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, sqlx::Type)]
